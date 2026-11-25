@@ -84,7 +84,7 @@ function InboxPage() {
           {items.map((i) => <InboxRow key={i.id} item={i} />)}
         </AnimatePresence>
       </ul>
-      {items.length === 0 && <EmptyState className="mt-4" title={showDone ? "没有归档内容" : "Inbox 清空了"} description={showDone ? undefined : "Inbox zero。去 Today 专注执行吧。"} />}
+      {items.length === 0 && <EmptyState className="mt-4" title={showDone ? "没有归档内容" : "Inbox 清空了"} {...(showDone ? {} : { description: "Inbox zero。去 Today 专注执行吧。" })} />}
     </PageContainer>
   );
 }

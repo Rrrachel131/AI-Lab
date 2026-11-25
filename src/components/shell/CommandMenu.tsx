@@ -7,6 +7,8 @@ import { useStore } from "@/lib/data/store";
 import { useUI } from "@/lib/ui-store";
 import { NAV } from "./nav";
 
+type NavItem = (typeof NAV)[number]["items"][number];
+
 export function CommandMenu() {
   const open = useUI((s) => s.commandOpen);
   const setOpen = useUI((s) => s.setCommand);
@@ -47,7 +49,7 @@ export function CommandMenu() {
           <CommandItem onSelect={() => openQuick("import")}><FileJson /> 导入 JSON 计划</CommandItem>
         </CommandGroup>
         <CommandGroup heading="导航">
-          {NAV.flatMap((g) => g.items).map((i) => (
+          {NAV.flatMap((g): readonly NavItem[] => g.items).map((i) => (
             <CommandItem key={i.to} value={`nav ${i.label} ${i.hint}`} onSelect={() => go(() => navigate({ to: i.to }))}>
               <i.Icon /> {i.label} <span className="text-muted-foreground">· {i.hint}</span>
             </CommandItem>
