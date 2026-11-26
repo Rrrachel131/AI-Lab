@@ -78,7 +78,7 @@ export function Universe(props: { bodies: UniverseBody[]; overall: number; onEnt
   const fx = useFx();
   return (
     <Stage fallback={<UniverseFallback bodies={props.bodies} onEnter={props.onEnter} />}>
-      <UniverseScene {...props} density={fx.density} />
+      <UniverseScene {...props} density={fx.density} motion={fx.motion} />
     </Stage>
   );
 }
@@ -116,7 +116,7 @@ export function Odyssey(props: { nodes: OdysseyNode[]; energy: number; selectedI
   const fx = useFx();
   return (
     <Stage fallback={<OdysseyFallback {...props} />}>
-      <OdysseyScene {...props} density={fx.density} />
+      <OdysseyScene {...props} density={fx.density} motion={fx.motion} />
     </Stage>
   );
 }
