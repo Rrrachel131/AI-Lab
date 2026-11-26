@@ -1,14 +1,15 @@
 import { Html } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { DENSITY } from "@/lib/fx";
-import { CoreParticles, PointerParallax } from "@/components/fx/three/CoreParticles";
+import { CoreParticles } from "@/components/fx/three/CoreParticles";
+import { OrbitCamera, OrbitViewport } from "@/components/fx/three/OrbitViewport";
 import type { OdysseyNode } from "./types";
 
 const RX = 3.9;
 const RZ = 2.5;
-export function nodeAngle(i: number, n: number) {
+function nodeAngle(i: number, n: number) {
   return -Math.PI / 2 - (i / Math.max(1, n)) * Math.PI * 2 + Math.PI; // start at front
 }
 const point = (a: number) => new THREE.Vector3(Math.cos(a) * RX, 0, Math.sin(a) * RZ);
@@ -18,7 +19,14 @@ function Orbit({ litFraction }: { litFraction: number }) {
     const pts = Array.from({ length: 257 }, (_, i) => point((i / 256) * Math.PI * 2));
     return new THREE.BufferGeometry().setFromPoints(pts);
   }, []);
-  const flowGeo = useMemo(() => new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(new Float32Array(220 * 3), 3)), []);
+  const flowGeo = useMemo(
+    () =>
+      new THREE.BufferGeometry().setAttribute(
+        "position",
+        new THREE.BufferAttribute(new Float32Array(220 * 3), 3),
+      ),
+    [],
+  );
   const off = useRef(0);
   useFrame((_, d) => {
     off.current = (off.current + Math.min(d, 0.05) * 0.12) % 1;
@@ -41,14 +49,34 @@ function Orbit({ litFraction }: { litFraction: number }) {
       </lineLoop>
       {litFraction > 0 && (
         <points geometry={flowGeo}>
-          <pointsMaterial color="#FFAD72" size={0.06} sizeAttenuation transparent opacity={0.95} depthWrite={false} blending={THREE.AdditiveBlending} />
+          <pointsMaterial
+            color="#FFAD72"
+            size={0.06}
+            sizeAttenuation
+            transparent
+            opacity={0.95}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
         </points>
       )}
     </>
   );
 }
 
-function Node({ node, total, selected, onSelect }: { node: OdysseyNode; total: number; selected: boolean; onSelect: (id: string) => void }) {
+function Node({
+  node,
+  total,
+  selected,
+  onSelect,
+  labels,
+}: {
+  node: OdysseyNode;
+  total: number;
+  selected: boolean;
+  onSelect: (id: string) => void;
+  labels: RefObject<HTMLElement>;
+}) {
   const ref = useRef<THREE.Mesh>(null);
   const ring = useRef<THREE.Mesh>(null);
   const [hover, setHover] = useState(false);
@@ -65,7 +93,8 @@ function Node({ node, total, selected, onSelect }: { node: OdysseyNode; total: n
       const t = state.clock.elapsedTime;
       const p = node.state === "active" ? 1 + ((t * 0.8) % 1) * 1.4 : 1.3;
       ring.current.scale.setScalar(p);
-      (ring.current.material as THREE.MeshBasicMaterial).opacity = node.state === "active" ? 0.6 * (1 - ((t * 0.8) % 1)) : selected ? 0.6 : 0;
+      (ring.current.material as THREE.MeshBasicMaterial).opacity =
+        node.state === "active" ? 0.6 * (1 - ((t * 0.8) % 1)) : selected ? 0.6 : 0;
     }
   });
   return (
@@ -79,11 +108,9 @@ function Node({ node, total, selected, onSelect }: { node: OdysseyNode; total: n
         onPointerOver={(e) => {
           e.stopPropagation();
           setHover(true);
-          document.body.style.cursor = "pointer";
         }}
         onPointerOut={() => {
           setHover(false);
-          document.body.style.cursor = "";
         }}
       >
         <sphereGeometry args={[0.17, 32, 32]} />
@@ -91,12 +118,31 @@ function Node({ node, total, selected, onSelect }: { node: OdysseyNode; total: n
       </mesh>
       <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.24, 0.27, 48]} />
-        <meshBasicMaterial color="#E87532" transparent opacity={0} side={THREE.DoubleSide} depthWrite={false} />
+        <meshBasicMaterial
+          color="#E87532"
+          transparent
+          opacity={0}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
       </mesh>
-      <Html center distanceFactor={8} position={[0, 0.55, 0]} zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
+      <Html
+        center
+        distanceFactor={8}
+        position={[0, 0.55, 0]}
+        zIndexRange={[10, 0]}
+        portal={labels}
+        style={{ pointerEvents: "none" }}
+      >
         <div className="whitespace-nowrap text-center">
-          <div className="font-mono text-[10px] tracking-[0.18em] text-ink-muted">{String(node.index + 1).padStart(2, "0")}</div>
-          <div className={`text-[13px] font-medium tracking-tight ${node.state === "upcoming" ? "text-ink-muted" : "text-ink-foreground"}`}>{node.name}</div>
+          <div className="font-mono text-[10px] tracking-[0.18em] text-ink-muted">
+            {String(node.index + 1).padStart(2, "0")}
+          </div>
+          <div
+            className={`text-[13px] font-medium tracking-tight ${node.state === "upcoming" ? "text-ink-muted" : "text-ink-foreground"}`}
+          >
+            {node.name}
+          </div>
           <div className="font-mono text-[10px] text-amber">{Math.round(node.progress * 100)}%</div>
         </div>
       </Html>
@@ -104,18 +150,21 @@ function Node({ node, total, selected, onSelect }: { node: OdysseyNode; total: n
   );
 }
 
-function Intro() {
-  const { camera, pointer } = useThree();
-  useFrame((_, d) => {
-    const dt = Math.min(d, 0.05);
-    const dest = new THREE.Vector3(pointer.x * 0.6, 3.4 + pointer.y * 0.3, 8.6);
-    camera.position.lerp(dest, 1 - Math.exp(-1.8 * dt));
-    camera.lookAt(0, -0.2, 0);
-  });
-  return null;
-}
-
-export default function OdysseyScene({ nodes, energy, density, selectedId, onSelect }: { nodes: OdysseyNode[]; energy: number; density: keyof typeof DENSITY; selectedId: string | null; onSelect: (id: string | null) => void }) {
+export default function OdysseyScene({
+  nodes,
+  energy,
+  density,
+  motion,
+  selectedId,
+  onSelect,
+}: {
+  nodes: OdysseyNode[];
+  energy: number;
+  density: keyof typeof DENSITY;
+  motion: boolean;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
   const [ready, setReady] = useState(false);
   // lit fraction: completed phases plus partial progress of the active one
   const lit = useMemo(() => {
@@ -126,18 +175,36 @@ export default function OdysseyScene({ nodes, energy, density, selectedId, onSel
   }, [nodes]);
   return (
     <div className="absolute inset-0" data-scene-ready={ready ? "" : undefined}>
-      <Canvas dpr={[1, 1.75]} camera={{ position: [0, 9, 20], fov: 42 }} gl={{ antialias: true, alpha: true }} onCreated={() => requestAnimationFrame(() => setReady(true))} onPointerMissed={() => onSelect(null)}>
-        <Intro />
-        <PointerParallax strength={0.08}>
-          <group position={[0, 0.25, 0]}>
-            <CoreParticles count={DENSITY[density]} energy={energy} scale={1.15} />
-          </group>
-          <Orbit litFraction={lit} />
-          {nodes.map((n) => (
-            <Node key={n.id} node={n} total={nodes.length} selected={selectedId === n.id} onSelect={onSelect} />
-          ))}
-        </PointerParallax>
-      </Canvas>
+      <OrbitViewport
+        motion={motion}
+        className="absolute bottom-[4.25rem] left-5 z-10 flex items-center gap-1.5 md:bottom-[5.5rem] md:left-8"
+      >
+        {(view, labels) => (
+          <Canvas
+            dpr={[1, 1.75]}
+            camera={{ position: [0, 9, 20], fov: 42 }}
+            gl={{ antialias: true, alpha: true }}
+            onCreated={() => requestAnimationFrame(() => setReady(true))}
+            onPointerMissed={() => onSelect(null)}
+          >
+            <OrbitCamera view={view} height={3.4} distance={8.6} lookY={-0.2} motion={motion} />
+            <group position={[0, 0.25, 0]}>
+              <CoreParticles count={DENSITY[density]} energy={energy} scale={1.15} />
+            </group>
+            <Orbit litFraction={lit} />
+            {nodes.map((n) => (
+              <Node
+                key={n.id}
+                node={n}
+                labels={labels}
+                total={nodes.length}
+                selected={selectedId === n.id}
+                onSelect={onSelect}
+              />
+            ))}
+          </Canvas>
+        )}
+      </OrbitViewport>
     </div>
   );
 }

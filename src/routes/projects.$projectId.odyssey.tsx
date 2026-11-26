@@ -62,7 +62,7 @@ function OdysseyPage() {
         </div>
 
         {/* phase strip for quick / accessible selection */}
-        <div className="absolute inset-x-0 bottom-0 flex gap-1.5 overflow-x-auto p-4 scrollbar-none md:p-6">
+        <div className="absolute inset-x-0 bottom-0 z-10 flex gap-1.5 overflow-x-auto p-4 scrollbar-none md:p-6">
           {phaseInfo.map((p) => (
             <button
               key={p.phase.id}
@@ -86,7 +86,7 @@ function OdysseyPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 24 }}
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute bottom-20 right-3 top-28 flex w-[min(380px,calc(100%-1.5rem))] flex-col overflow-hidden rounded-2xl border border-ink-foreground/10 bg-ink/80 text-ink-foreground backdrop-blur-md md:right-6 md:top-6"
+              className="absolute bottom-28 right-3 top-28 z-20 flex w-[min(380px,calc(100%-1.5rem))] flex-col overflow-hidden rounded-2xl border border-ink-foreground/10 bg-ink/80 text-ink-foreground backdrop-blur-md md:bottom-20 md:right-6 md:top-6"
             >
               <div className="border-b border-ink-foreground/10 p-5">
                 <div className="flex items-center justify-between">
