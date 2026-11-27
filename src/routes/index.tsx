@@ -58,7 +58,7 @@ function Today() {
         <h1 className="font-display text-4xl font-semibold leading-tight md:text-5xl">今天要做什么？</h1>
       </header>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
         <div className="min-w-0 space-y-5">
           <section className="surface min-w-0 p-4 md:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -96,15 +96,15 @@ function Today() {
 
         <aside className="min-w-0 space-y-5" aria-label="进度与日期">
           <Reveal>
-            <section className="dark surface-ink relative min-h-44 overflow-hidden p-5">
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-3/5" aria-hidden="true">
+            <section className="dark surface-ink relative grid min-h-56 content-center overflow-hidden p-6 lg:min-h-64">
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-2/3" aria-hidden="true">
                 <EnergyCore energy={progress.ratio} />
               </div>
               <div className="relative">
                 <h2 className="text-sm font-medium text-ink-muted">今日进度</h2>
-                <p className="mt-3 font-display text-5xl leading-none tabular text-ink-foreground">
+                <p className="mt-3 font-display text-6xl leading-none tabular text-ink-foreground">
                   <CountUp value={Math.round(progress.ratio * 100)} />
-                  <span className="ml-1 text-2xl text-amber">%</span>
+                  <span className="ml-1 text-3xl text-amber">%</span>
                 </p>
                 <p className="mt-3 text-sm text-ink-muted">已完成 {progress.done} 项，共 {progress.total} 项</p>
               </div>
