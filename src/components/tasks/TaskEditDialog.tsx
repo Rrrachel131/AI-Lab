@@ -34,7 +34,7 @@ export function TaskEditDialog() {
           <div>
             <div className="border-b p-6 pb-4">
               <DialogTitle className="sr-only">编辑任务</DialogTitle>
-              <div className="eyebrow mb-2">Task</div>
+              <div className="eyebrow mb-2">编辑任务</div>
               <Input value={task.title} onChange={(e) => update(task.id, { title: e.target.value })} className="h-auto border-0 px-0 font-display text-2xl shadow-none focus-visible:ring-0" />
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {(["todo", "doing", "done"] as Task["status"][]).map((s) => (
@@ -67,7 +67,7 @@ export function TaskEditDialog() {
                   </select>
                 </label>
                 <label className="grid gap-1.5">
-                  <span className="eyebrow">截止日期 DDL</span>
+                  <span className="eyebrow">截止日期</span>
                   <Input type="date" value={task.dueDate ?? ""} onChange={(e) => update(task.id, { dueDate: e.target.value || null })} />
                 </label>
                 <label className="grid gap-1.5">

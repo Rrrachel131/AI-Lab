@@ -9,6 +9,7 @@ import { useUI } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
 import { TaskCheck } from "./TaskCheck";
 
+const priorityLabels: Record<Task["priority"], string> = { high: "高", medium: "中", low: "低" };
 const PRIORITY: Record<Task["priority"], string> = { high: "bg-brand", medium: "bg-amber", low: "bg-muted-foreground/40" };
 
 export function TaskRow({ task, showProject = true, className }: { task: Task; showProject?: boolean; className?: string }) {
@@ -53,7 +54,7 @@ export function TaskRow({ task, showProject = true, className }: { task: Task; s
           )}
         </div>
       </div>
-      <span className={cn("mt-2 size-1.5 shrink-0 rounded-full", PRIORITY[task.priority])} title={`优先级：${task.priority}`} />
+      <span className={cn("mt-2 size-1.5 shrink-0 rounded-full", PRIORITY[task.priority])} title={`优先级：${priorityLabels[task.priority]}`} />
     </motion.div>
   );
 }
