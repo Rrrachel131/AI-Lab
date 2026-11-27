@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { animate, motion, useMotionTemplate, useMotionValue, useSpring } from "framer-motion";
 import { CalendarDays, ChevronDown, Plus } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ProgressBar, Reveal } from "@/components/common/Page";
 import { ProjectDot } from "@/components/common/ProjectDot";
@@ -9,9 +10,10 @@ import { EnergyCore } from "@/components/fx/Stages";
 import { TaskRow } from "@/components/tasks/TaskRow";
 import { Button } from "@/components/ui/button";
 import { daysUntil, formatLong, relativeLabel, shiftDate, todayISO } from "@/lib/data/dates";
-import { isOverdue, taskProgress, todayTasks } from "@/lib/data/progress";
+import { isOverdue, taskProgress, todayTasks, type Progress } from "@/lib/data/progress";
 import { useStore } from "@/lib/data/store";
 import type { InboxKind, Task } from "@/lib/data/types";
+import { useFx } from "@/lib/fx";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,10 +31,16 @@ const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
 const currentDate = new Intl.DateTimeFormat("zh-CN", { dateStyle: "full" });
 const captureLabels: Record<InboxKind, string> = { idea: "想法", task: "待办", resource: "资料" };
 
+function greeting(hour: number, name: string) {
+  const salutation = hour < 11 ? "早上好" : hour < 14 ? "中午好" : hour < 18 ? "下午好" : "晚上好";
+  return name.trim() ? `${salutation}，${name.trim()}！` : `${salutation}！`;
+}
+
 function Today() {
   const tasks = useStore((s) => s.tasks);
   const projects = useStore((s) => s.projects);
   const milestones = useStore((s) => s.milestones);
+  const name = useStore((s) => s.settings.userName);
   const addTask = useStore((s) => s.addTask);
   const [draft, setDraft] = useState("");
   const [filter, setFilter] = useState("");
@@ -55,7 +63,7 @@ function Today() {
     <div className="mx-auto w-full max-w-7xl px-4 pb-14 pt-8 md:px-8 md:pt-12">
       <header className="mb-7">
         <p className="mb-3 text-sm text-muted-foreground">{currentDate.format(new Date(`${today}T00:00:00`))}</p>
-        <h1 className="font-display text-4xl font-semibold leading-tight md:text-5xl">今天要做什么？</h1>
+        <h1 className="font-display text-4xl font-semibold leading-tight md:text-5xl">{greeting(new Date().getHours(), name)}</h1>
       </header>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
@@ -95,21 +103,7 @@ function Today() {
         </div>
 
         <aside className="min-w-0 space-y-5" aria-label="进度与日期">
-          <Reveal>
-            <section className="dark surface-ink relative grid min-h-56 content-center overflow-hidden p-6 lg:min-h-64">
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-2/3" aria-hidden="true">
-                <EnergyCore energy={progress.ratio} />
-              </div>
-              <div className="relative">
-                <h2 className="text-sm font-medium text-ink-muted">今日进度</h2>
-                <p className="mt-3 font-display text-6xl leading-none tabular text-ink-foreground">
-                  <CountUp value={Math.round(progress.ratio * 100)} />
-                  <span className="ml-1 text-3xl text-amber">%</span>
-                </p>
-                <p className="mt-3 text-sm text-ink-muted">已完成 {progress.done} 项，共 {progress.total} 项</p>
-              </div>
-            </section>
-          </Reveal>
+          <ProgressCard progress={progress} />
           <section className="surface p-5">
             <h2 className="flex items-center gap-2 font-display text-lg font-semibold"><CalendarDays className="size-4 text-brand" /> 即将截止</h2>
             {deadlines.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">暂无即将截止的项目或里程碑。</p> : (
@@ -153,6 +147,79 @@ function Today() {
         </aside>
       </div>
     </div>
+  );
+}
+
+function ProgressCard({ progress: { done, total, ratio } }: { progress: Progress }) {
+  const { motion: enableMotion } = useFx();
+  const x = useSpring(0, { stiffness: 150, damping: 24 });
+  const y = useSpring(0, { stiffness: 150, damping: 24 });
+  const glowX = useMotionValue(50);
+  const glowY = useMotionValue(50);
+  const glow = useMotionTemplate`radial-gradient(circle at ${glowX}% ${glowY}%, #ff9d5338, transparent 58%)`;
+  const pulse = useMotionValue(0);
+  const previousDone = useRef(done);
+  const percent = Math.round(ratio * 100);
+  const allDone = total > 0 && done === total;
+
+  useEffect(() => {
+    const completed = done > previousDone.current;
+    previousDone.current = done;
+    if (!completed || !enableMotion) {
+      pulse.set(0);
+      return;
+    }
+
+    const animation = animate(pulse, [0, allDone ? 0.9 : 0.6, 0], {
+      duration: allDone ? 1.35 : 0.8,
+      times: [0, 0.22, 1],
+    });
+    return () => animation.stop();
+  }, [allDone, done, enableMotion, pulse]);
+
+  return (
+    <Reveal>
+      <section
+        className="group dark surface-ink relative grid min-h-56 content-center overflow-hidden p-6 lg:min-h-64"
+        onPointerMove={(event) => {
+          if (!enableMotion || event.pointerType === "touch") return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          const horizontal = (event.clientX - bounds.left) / bounds.width;
+          const vertical = (event.clientY - bounds.top) / bounds.height;
+          x.set((horizontal - 0.5) * 24);
+          y.set((vertical - 0.5) * 18);
+          glowX.set(horizontal * 100);
+          glowY.set(vertical * 100);
+        }}
+        onPointerLeave={() => {
+          x.set(0);
+          y.set(0);
+        }}
+      >
+        <motion.div className="pointer-events-none absolute inset-y-0 right-0 w-2/3" style={enableMotion ? { x, y } : {}} aria-hidden="true">
+          <EnergyCore energy={ratio} />
+        </motion.div>
+        {enableMotion && (
+          <>
+            <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100" style={{ background: glow }} />
+            <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_72%_50%,#ff9d5370,transparent_72%)]" style={{ opacity: pulse }} />
+          </>
+        )}
+        <div className="relative">
+          <h2 className="text-sm font-medium text-ink-muted">今日进度</h2>
+          <p aria-hidden="true" className="mt-3 font-display text-6xl leading-none tabular text-ink-foreground">
+            {enableMotion ? <CountUp value={percent} duration={0.65} /> : percent}
+            <span className="ml-1 text-3xl text-amber">%</span>
+          </p>
+          <p role="status" className="mt-3 text-sm text-ink-muted">
+            {allDone ? `今日任务全部完成 · ${total} 项` : `已完成 ${done} 项，共 ${total} 项`}
+          </p>
+          <div role="progressbar" aria-label="今日任务完成进度" aria-valuenow={percent} className="mt-4 h-1 w-full max-w-32 overflow-hidden rounded-full bg-white/15">
+            <div className="h-full rounded-full bg-ember transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${percent}%` }} />
+          </div>
+        </div>
+      </section>
+    </Reveal>
   );
 }
 
